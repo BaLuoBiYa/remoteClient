@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="/src/styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tauri App</title>
+  <script type="module" src="/src/main.ts" defer></script>
+</head>
+
+<body>
+  <main class="container">
+    <!-- <h1>Welcome to Tauri</h1> -->
+
+    <!-- <div class="row">
+      <a href="https://vite.dev" target="_blank">
+        <img src="/src/assets/vite.svg" class="logo vite" alt="Vite logo" />
+      </a>
+      <a href="https://tauri.app" target="_blank">
+        <img src="/src/assets/tauri.svg" class="logo tauri" alt="Tauri logo" />
+      </a>
+      <a href="https://www.typescriptlang.org/docs" target="_blank">
+        <img src="/src/assets/typescript.svg" class="logo typescript" alt="typescript logo" />
+      </a>
+    </div>
+    <p>Click on the Tauri logo to learn more about the framework</p>
+
+    <form class="row" id="greet-form">
+      <input id="greet-input" placeholder="Enter a name..." />
+      <button type="submit">Greet</button>
+    </form>
+    <p id="greet-msg"></p>
+
+    <hr /> -->
+
+    <h1>🎮 手柄状态</h1>
+    <div id="gamepad-status" class="gamepad-panel">
+      <div class="gamepad-section">
+        <h3>连接状态</h3>
+        <p id="gp-connected" class="status-badge disconnected">未连接</p>
+      </div>
+
+      <div class="gamepad-section">
+        <h3>左摇杆</h3>
+        <p>X: <span id="gp-ls-x">0.00</span></p>
+        <p>Y: <span id="gp-ls-y">0.00</span></p>
+      </div>
+
+      <div class="gamepad-section">
+        <h3>右摇杆</h3>
+        <p>X: <span id="gp-rs-x">0.00</span></p>
+        <p>Y: <span id="gp-rs-y">0.00</span></p>
+      </div>
+
+      <div class="gamepad-section">
+        <h3>扳机</h3>
+        <p>左扳机: <span id="gp-lt">0.00</span></p>
+        <p>右扳机: <span id="gp-rt">0.00</span></p>
+        <p>左肩键: <span id="gp-lb" class="btn-off">○</span></p>
+        <p>右肩键: <span id="gp-rb" class="btn-off">○</span></p>
+      </div>
+
+      <div class="gamepad-section">
+        <h3>动作键</h3>
+        <p>A (南): <span id="gp-south" class="btn-off">○</span></p>
+        <p>B (东): <span id="gp-east" class="btn-off">○</span></p>
+        <p>X (西): <span id="gp-west" class="btn-off">○</span></p>
+        <p>Y (北): <span id="gp-north" class="btn-off">○</span></p>
+      </div>
+
+      <div class="gamepad-section">
+        <h3>方向键</h3>
+        <p>上: <span id="gp-dpad-up" class="btn-off">○</span></p>
+        <p>下: <span id="gp-dpad-down" class="btn-off">○</span></p>
+        <p>左: <span id="gp-dpad-left" class="btn-off">○</span></p>
+        <p>右: <span id="gp-dpad-right" class="btn-off">○</span></p>
+      </div>
+    </div>
+  </main>
+</body>
+
+</html>
