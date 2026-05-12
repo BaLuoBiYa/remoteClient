@@ -30,13 +30,11 @@
     <!-- ====== 左侧面板（宽度由 JS 控制，默认 66%） ====== -->
     <div class="left-pane" id="left-pane">
 
-      <!-- 系统监控：上 2/3（高度由 JS 控制） -->
+      <!-- 终端输出：上 2/3（高度由 JS 控制） -->
       <div class="panel-frame" id="monitor-pane">
-        <h2 class="h6 border-bottom border-white border-opacity-25 pb-2 mb-2">📊 系统监控</h2>
-        <div id="monitor-content" class="small overflow-auto">
-          <p class="mb-1">CPU 使用率：<span id="cpu-usage" class="fw-bold">--</span>%</p>
-          <p class="mb-1">内存使用率：<span id="mem-usage" class="fw-bold">--</span>%</p>
-          <p class="mb-1">GPU 温度：<span id="gpu-temp" class="fw-bold">--</span>°C</p>
+        <h2 class="h6 border-bottom border-white border-opacity-25 pb-2 mb-2">🖥️ 终端输出</h2>
+        <div id="terminal" class="terminal-body flex-grow-1 rounded overflow-auto">
+          <pre id="terminal-output" class="m-0"></pre>
         </div>
       </div>
 
@@ -61,10 +59,11 @@
           <label class="d-flex align-items-center gap-2 mb-0">
             <span>WS 地址：</span>
             <input id="ws-url-param" class="form-control form-control-sm bg-dark text-white border-secondary"
-              type="text" style="flex:1;" placeholder="ws://host:port">
+              type="text" style="flex:1;" placeholder="ws://host:port" readonly>
             <button id="ws-reconfig-btn" class="btn btn-outline-light btn-sm" title="重新配置连接">重设</button>
           </label>
-          <small class="text-white-50" style="font-size:0.7rem;">⚠ 修改后需重启应用生效</small>
+          <small class="text-danger" style="font-size:0.7rem;">⚠ 修改后需重启应用生效</small>
+          <hr class="my-2 border-secondary" style="border-width:4px;">
         </div>
         <div id="params-content" class="small overflow-auto"
           style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:6px; align-content:start;">
@@ -77,12 +76,18 @@
     <!-- 水平分隔条 -->
     <div class="splitter splitter-v" id="splitter-h"></div>
 
-    <!-- ====== 右侧面板：终端输出 ====== -->
+    <!-- ====== 右侧面板：系统监控 ====== -->
     <div class="right-pane" id="right-pane">
       <div class="panel-frame h-100 d-flex flex-column">
-        <h2 class="h6 border-bottom border-white border-opacity-25 pb-2 mb-2">🖥️ 终端输出</h2>
-        <div id="terminal" class="terminal-body flex-grow-1 rounded overflow-auto">
-          <pre id="terminal-output" class="m-0"></pre>
+        <h2 class="h6 border-bottom border-white border-opacity-25 pb-2 mb-2">📊 系统监控</h2>
+        <div id="monitor-content" class="small overflow-auto">
+          <p class="mb-1">CPU 使用率：<span id="cpu-usage" class="fw-bold">--</span>%</p>
+          <p class="mb-1">内存使用率：<span id="mem-usage" class="fw-bold">--</span>%</p>
+          <p class="mb-1">GPU 温度：<span id="gpu-temp" class="fw-bold">--</span>°C</p>
+          <hr class="my-2 border-secondary" style="border-width:2px;">
+          <p class="mb-1 fw-bold">📤 当前发送指令：</p>
+          <pre id="cmd-display" class="bg-dark text-info p-2 rounded overflow-auto"
+            style="font-size:0.65rem; max-height:300px; white-space:pre-wrap; word-break:break-all;">等待指令...</pre>
         </div>
       </div>
     </div>

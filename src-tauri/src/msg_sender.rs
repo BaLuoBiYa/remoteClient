@@ -1,5 +1,6 @@
 use crate::log_line;
 use futures_util::{SinkExt, StreamExt};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex as StdMutex};
 use tokio::sync::Notify;
 use tokio_tungstenite::connect_async;
@@ -20,6 +21,8 @@ pub struct MsgBridge {
     /// 连接状态
     #[allow(dead_code)]
     connected: Arc<StdMutex<bool>>,
+    /// 关闭信号：Drop 时置 true，通知后台线程退出
+    shutdown: Arc<AtomicBool>,
 }
 
 impl MsgBridge {
@@ -34,18 +37,20 @@ impl MsgBridge {
         let recv_queue = Arc::new(StdMutex::new(Vec::new()));
         let send_notify = Arc::new(Notify::new());
         let connected = Arc::new(StdMutex::new(false));
+        let shutdown = Arc::new(AtomicBool::new(false));
 
         let ws_url = url.to_string();
         let snd = send_queue.clone();
         let rcv = recv_queue.clone();
         let notify = send_notify.clone();
         let conn = connected.clone();
+        let sd = shutdown.clone();
 
         // 在独立线程中启动 Tokio runtime 运行 WS 后台任务
         std::thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new()
                 .expect("failed to create tokio runtime for WS bridge");
-            rt.block_on(async { ws_loop(&ws_url, snd, rcv, notify, conn).await });
+            rt.block_on(async { ws_loop(&ws_url, snd, rcv, notify, conn, sd).await });
         });
 
         Self {
@@ -53,6 +58,7 @@ impl MsgBridge {
             recv_queue,
             send_notify,
             connected,
+            shutdown,
         }
     }
 
@@ -77,6 +83,13 @@ impl MsgBridge {
     }
 }
 
+impl Drop for MsgBridge {
+    fn drop(&mut self) {
+        self.shutdown.store(true, Ordering::SeqCst);
+        self.send_notify.notify_one(); // 唤醒可能阻塞在 select! 上的任务
+    }
+}
+
 /// WebSocket 连接维护循环
 ///
 /// 职责：
@@ -89,8 +102,14 @@ async fn ws_loop(
     recv_queue: Arc<StdMutex<Vec<String>>>,
     send_notify: Arc<Notify>,
     connected: Arc<StdMutex<bool>>,
+    shutdown: Arc<AtomicBool>,
 ) {
     loop {
+        if shutdown.load(Ordering::SeqCst) {
+            log_line!("[MsgBridge] 收到关闭信号，退出: {}", url);
+            break;
+        }
+
         match connect_async(url).await {
             Ok((mut ws_stream, _)) => {
                 *connected.lock().unwrap() = true;
@@ -99,10 +118,14 @@ async fn ws_loop(
                 // 连接成功后立即发送队列中积压的消息
                 drain_and_send(&send_queue, &mut ws_stream).await;
 
-                // 主循环：同时处理发送和接收
+                // 主循环：同时处理发送和接收，定期检查 shutdown
                 loop {
+                    if shutdown.load(Ordering::SeqCst) {
+                        log_line!("[MsgBridge] 收到关闭信号，主动断开: {}", url);
+                        break;
+                    }
                     tokio::select! {
-                        // 有新消息待发送
+                        // 有新消息待发送（Drop 时也会触发以唤醒 select!）
                         _ = send_notify.notified() => {
                             drain_and_send(&send_queue, &mut ws_stream).await;
                         }
@@ -123,6 +146,8 @@ async fn ws_loop(
                                 }
                             }
                         }
+                        // 定期轮询 shutdown 标记（500ms）
+                        _ = tokio::time::sleep(std::time::Duration::from_millis(500)) => {}
                     }
                 }
             }

@@ -33,7 +33,7 @@ impl DogCommand {
         Self {
             gait: Gait::STAND,
             step_height: 30.0,
-            base_height: 150.0,
+            base_height: 200.0,
             step_duration: 0.5,
             linear_x: 0.0,
             linear_y: 0.0,
