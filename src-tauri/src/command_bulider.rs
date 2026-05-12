@@ -4,6 +4,7 @@ pub enum Gait {
     STAND = 0,
     WALK = 1,
     JUMP = 2,
+    DEACTIVE = 3,
 }
 
 pub struct DogCommand {
