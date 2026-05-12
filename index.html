@@ -10,6 +10,21 @@
 </head>
 
 <body class="bg-dark text-white vh-100 overflow-hidden">
+
+  <!-- ====== 首次启动弹窗 ====== -->
+  <div class="modal-overlay" id="ws-modal" style="display:none;">
+    <div class="modal-box panel-frame">
+      <h3 class="h5 mb-3">🌐 配置 WebSocket 连接</h3>
+      <p class="small mb-2">请输入 ROS2 桥接节点的 WebSocket 地址：</p>
+      <input id="ws-url-input" class="form-control bg-dark text-white border-secondary mb-3" type="text"
+        value="ws://NanoPi-M6.local:9090" placeholder="ws://host:port">
+      <div class="d-flex justify-content-end gap-2">
+        <button id="ws-modal-cancel" class="btn btn-secondary btn-sm">取消</button>
+        <button id="ws-modal-confirm" class="btn btn-primary btn-sm">确认连接</button>
+      </div>
+    </div>
+  </div>
+
   <div class="app-layout">
 
     <!-- ====== 左侧面板（宽度由 JS 控制，默认 66%） ====== -->
@@ -41,6 +56,15 @@
               <option value="SCurve">S 曲线</option>
             </select>
           </label>
+        </div>
+        <div class="small mb-2">
+          <label class="d-flex align-items-center gap-2 mb-0">
+            <span>WS 地址：</span>
+            <input id="ws-url-param" class="form-control form-control-sm bg-dark text-white border-secondary"
+              type="text" style="flex:1;" placeholder="ws://host:port">
+            <button id="ws-reconfig-btn" class="btn btn-outline-light btn-sm" title="重新配置连接">重设</button>
+          </label>
+          <small class="text-white-50" style="font-size:0.7rem;">⚠ 修改后需重启应用生效</small>
         </div>
         <div id="params-content" class="small overflow-auto"
           style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:6px; align-content:start;">

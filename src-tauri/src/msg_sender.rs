@@ -5,9 +5,6 @@ use tokio::sync::Notify;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 
-/// 默认 ROS2 桥接节点 WebSocket 地址
-const DEFAULT_WS_URL: &str = "ws://NanoPi-M6.local:9090";
-
 /// WebSocket 消息桥接器
 ///
 /// 双队列架构：
@@ -26,9 +23,9 @@ pub struct MsgBridge {
 }
 
 impl MsgBridge {
-    /// 创建 MsgBridge 并启动后台 WebSocket 连接任务（默认地址）
-    pub fn new() -> Self {
-        Self::with_url(DEFAULT_WS_URL)
+    /// 创建 MsgBridge 并启动后台 WebSocket 连接任务
+    pub fn new(url: &str) -> Self {
+        Self::with_url(url)
     }
 
     /// 指定 URL 创建

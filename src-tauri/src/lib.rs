@@ -14,6 +14,7 @@ use std::thread;
 /// 可从前端实时调节的参数集合
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
+    pub ws_url: String,
     pub curve: Curve,
     pub max_linear_speed: f32,
     pub max_angular: f32,
@@ -30,6 +31,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            ws_url: "ws://localhost:9090".into(),
             curve: Curve::Exponential,
             max_linear_speed: 0.1,
             max_angular: 0.1,
@@ -69,6 +71,9 @@ fn update_setting(
         "curve" => {
             s.curve = serde_json::from_value(value).map_err(|e| e.to_string())?;
         }
+        "ws_url" => {
+            s.ws_url = value.as_str().ok_or("invalid string")?.to_string();
+        }
         "max_linear_speed" => s.max_linear_speed = value.as_f64().ok_or("invalid")? as f32,
         "max_angular" => s.max_angular = value.as_f64().ok_or("invalid")? as f32,
         "exp_sensitivity" => s.exp_sensitivity = value.as_f64().ok_or("invalid")? as f32,
@@ -102,7 +107,8 @@ pub fn run() {
 
             let mut interval = tokio::time::interval(std::time::Duration::from_millis(20));
             let mut mapper = Mapper::new("/dog/command".to_string());
-            let ws_bridge = MsgBridge::new();
+            let ws_url = settings_for_thread.read().unwrap().ws_url.clone();
+            let ws_bridge = MsgBridge::new(&ws_url);
 
             loop {
                 interval.tick().await;
