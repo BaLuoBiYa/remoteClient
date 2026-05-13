@@ -66,7 +66,7 @@
           <hr class="my-2 border-secondary" style="border-width:4px;">
         </div>
         <div id="params-content" class="small overflow-auto"
-          style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:6px; align-content:start;">
+          style="flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr; gap:6px; align-content:start;">
           <!-- 由 JS 动态生成滑块 -->
         </div>
       </div>
@@ -82,12 +82,32 @@
         <h2 class="h6 border-bottom border-white border-opacity-25 pb-2 mb-2">📊 系统监控</h2>
         <div id="monitor-content" class="small overflow-auto">
           <p class="mb-1">CPU 使用率：<span id="cpu-usage" class="fw-bold">--</span>%</p>
-          <p class="mb-1">内存使用率：<span id="mem-usage" class="fw-bold">--</span>%</p>
-          <p class="mb-1">GPU 温度：<span id="gpu-temp" class="fw-bold">--</span>°C</p>
+          <p class="mb-1">CPU 温度：<span id="cpu-temp" class="fw-bold">--</span>°C</p>
+          <p class="mb-1">控制频率：<span id="control-freq" class="fw-bold">--</span> Hz</p>
+          <hr class="my-2 border-secondary" style="border-width:2px;">
+          <p class="mb-1 fw-bold">🔧 电机状态：</p>
+          <div class="table-responsive" style="max-height:320px; overflow-y:auto;">
+            <table class="table table-dark table-sm table-borderless small mb-0" style="font-size:0.65rem;">
+              <thead class="border-bottom border-secondary">
+                <tr>
+                  <th class="text-center">名称</th>
+                  <th class="text-center">位置(rad)</th>
+                  <th class="text-center">速度(rad/s)</th>
+                  <th class="text-center">力矩(N·m)</th>
+                  <th class="text-center">温度</th>
+                </tr>
+              </thead>
+              <tbody id="motor-status">
+                <tr>
+                  <td colspan="5" class="text-muted">等待数据...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <hr class="my-2 border-secondary" style="border-width:2px;">
           <p class="mb-1 fw-bold">📤 当前发送指令：</p>
-          <pre id="cmd-display" class="bg-dark text-info p-2 rounded overflow-auto"
-            style="font-size:0.65rem; max-height:300px; white-space:pre-wrap; word-break:break-all;">等待指令...</pre>
+          <pre id="cmd-display" class="bg-dark text-info p-2 rounded"
+            style="font-size:0.65rem; white-space:pre-wrap; word-break:break-all;">等待指令...</pre>
         </div>
       </div>
     </div>

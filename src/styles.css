@@ -21,6 +21,8 @@
     color: #ffffff;
     white-space: pre-wrap;
     word-break: break-all;
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
 }
 
 .terminal-body pre {
@@ -74,11 +76,40 @@
     min-height: 0;
 }
 
+#params-content {
+    overflow-y: scroll;
+    padding-right: 8px;
+}
+
 .right-pane {
     flex: 1;
     min-width: 200px;
     overflow: hidden;
     user-select: none;
+}
+
+#monitor-content {
+    overflow-y: scroll;
+}
+
+/* ========== 统一滚动条样式 ========== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35);
 }
 
 /* ========== 拖拽分隔条 ========== */

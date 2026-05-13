@@ -1,5 +1,6 @@
 use crate::log_buffer;
 use crate::mapping::Curve;
+use crate::system_status::SystemStatus;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
 
@@ -94,5 +95,13 @@ pub fn update_setting(
 /// 获取最新一条发送的 command JSON 字符串
 #[tauri::command]
 pub fn get_latest_command(state: tauri::State<'_, Arc<RwLock<String>>>) -> String {
+    state.read().unwrap().clone()
+}
+
+/// 获取最新系统监控状态（CPU、温度、电机等）
+#[tauri::command]
+pub fn get_system_status(
+    state: tauri::State<'_, Arc<RwLock<Option<SystemStatus>>>>,
+) -> Option<SystemStatus> {
     state.read().unwrap().clone()
 }

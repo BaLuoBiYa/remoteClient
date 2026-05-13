@@ -1,6 +1,6 @@
 import { drainLogs, getLatestCommand } from "./backend";
 import type { Settings } from "./backend";
-import { getSettings, updateSetting, loadStoredSettings, saveSetting, WS_URL_FIRST_RUN_KEY } from "./backend";
+import { getSettings, updateSetting, loadStoredSettings, saveSetting, WS_URL_FIRST_RUN_KEY, getSystemStatus } from "./backend";
 
 // ========== 终端日志面板 ==========
 
@@ -310,4 +310,57 @@ export function showWSModal(): Promise<string | null> {
         cancelBtn.addEventListener("click", onCancel);
         input.addEventListener("keydown", onKey);
     });
+}
+
+// ========== 系统监控轮询 ==========
+
+export async function pollSystemStatus(): Promise<void> {
+    try {
+        const status = await getSystemStatus();
+        if (!status) return;
+
+        // CPU 使用率
+        const cpuEl = document.getElementById("cpu-usage");
+        if (cpuEl) {
+            cpuEl.textContent = status.cpu_usage.toFixed(1);
+            cpuEl.className = `fw-bold ${status.cpu_usage > 80 ? "text-danger" : status.cpu_usage > 50 ? "text-warning" : ""}`;
+        }
+
+        // CPU 温度
+        const tempEl = document.getElementById("cpu-temp");
+        if (tempEl) {
+            if (status.cpu_temperature < 0) {
+                tempEl.textContent = "N/A";
+                tempEl.className = "fw-bold text-muted";
+            } else {
+                tempEl.textContent = status.cpu_temperature.toFixed(1);
+                tempEl.className = `fw-bold ${status.cpu_temperature > 80 ? "text-danger" : status.cpu_temperature > 60 ? "text-warning" : ""}`;
+            }
+        }
+
+        // 控制频率
+        const freqEl = document.getElementById("control-freq");
+        if (freqEl) {
+            freqEl.textContent = status.control_frequency.toFixed(1);
+        }
+
+        // 电机状态表
+        const motorContainer = document.getElementById("motor-status");
+        if (motorContainer && status.motors && status.motors.length > 0) {
+            let html = "";
+            for (const m of status.motors) {
+                const tempColor = m.temperature > 70 ? "text-danger" : m.temperature > 50 ? "text-warning" : "";
+                html += `<tr>
+                    <td class="fw-bold text-center">${m.name}</td>
+                    <td class="text-center">${m.position.toFixed(3)}</td>
+                    <td class="text-center">${m.velocity.toFixed(2)}</td>
+                    <td class="text-center">${m.torque.toFixed(2)}</td>
+                    <td class="text-center ${tempColor}">${m.temperature}°C</td>
+                </tr>`;
+            }
+            motorContainer.innerHTML = html;
+        }
+    } catch {
+        // 忽略错误（后端可能尚未就绪）
+    }
 }

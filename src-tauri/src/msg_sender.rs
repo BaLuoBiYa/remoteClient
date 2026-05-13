@@ -69,6 +69,11 @@ impl MsgBridge {
         self.send_notify.notify_one();
     }
 
+    /// 获取接收队列的引用（可用于外部轮询接收消息）
+    pub fn recv_queue(&self) -> Arc<StdMutex<Vec<String>>> {
+        self.recv_queue.clone()
+    }
+
     /// 读取并清空接收队列（同步），返回所有已收到的消息
     /// 每条消息只被读取一次，读取后从队列销毁
     pub fn drain_recv(&self) -> Vec<String> {
@@ -117,6 +122,18 @@ async fn ws_loop(
 
                 // 连接成功后立即发送队列中积压的消息
                 drain_and_send(&send_queue, &mut ws_stream).await;
+
+                // 向 rosbridge 订阅系统监控 topic，否则收不到消息
+                let sub = serde_json::json!({
+                    "op": "subscribe",
+                    "topic": "/dog/monitor",
+                    "type": "dog_msg/msg/SystemState"
+                });
+                if let Err(e) = ws_stream.send(Message::Text(sub.to_string().into())).await {
+                    log_line!("[MsgBridge] 订阅 /dog/monitor 失败: {}", e);
+                } else {
+                    log_line!("[MsgBridge] 已订阅 /dog/monitor");
+                }
 
                 // 主循环：同时处理发送和接收，定期检查 shutdown
                 loop {

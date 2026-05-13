@@ -4,13 +4,17 @@ mod game_pad;
 mod log_buffer;
 mod mapping;
 mod msg_sender;
+mod system_status;
 
-use front::{drain_logs, get_latest_command, get_settings, update_setting, Settings};
+use front::{
+    drain_logs, get_latest_command, get_settings, get_system_status, update_setting, Settings,
+};
 use game_pad::GamepadInterface;
 use mapping::Mapper;
 use msg_sender::MsgBridge;
 use std::sync::{Arc, RwLock};
 use std::thread;
+use system_status::SystemStatus;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -18,6 +22,8 @@ pub fn run() {
     let settings_for_thread = Arc::clone(&settings);
     let latest_command: Arc<RwLock<String>> = Arc::new(RwLock::new(String::new()));
     let latest_command_for_thread = Arc::clone(&latest_command);
+    let system_status: Arc<RwLock<Option<SystemStatus>>> = Arc::new(RwLock::new(None));
+    let system_status_for_thread = Arc::clone(&system_status);
 
     // ---------- 手柄后台线程 ----------
     let _gamepad_handle = thread::spawn(move || {
@@ -48,6 +54,16 @@ pub fn run() {
                     log_line!("[Gamepad] ws_url 已更新: {}", ws_url);
                 }
 
+                // 处理接收到的消息（无论手柄是否连接）
+                if let Some(ref bridge) = ws_bridge {
+                    let msgs = bridge.drain_recv();
+                    for msg in &msgs {
+                        if let Some(status) = SystemStatus::try_from_rosbridge(msg) {
+                            *system_status_for_thread.write().unwrap() = Some(status);
+                        }
+                    }
+                }
+
                 if !s.connected {
                     continue;
                 }
@@ -55,7 +71,6 @@ pub fn run() {
                 if let Some(ref bridge) = ws_bridge {
                     if mapper.apply(s, &cfg) {
                         let cmd_json = mapper.cmd.build();
-                        log_line!("{}", cmd_json);
                         *latest_command_for_thread.write().unwrap() = cmd_json.clone();
                         bridge.push_send(cmd_json);
                     }
@@ -69,11 +84,13 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(settings)
         .manage(latest_command)
+        .manage(system_status)
         .invoke_handler(tauri::generate_handler![
             drain_logs,
             get_settings,
             update_setting,
-            get_latest_command
+            get_latest_command,
+            get_system_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
