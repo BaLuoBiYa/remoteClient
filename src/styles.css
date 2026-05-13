@@ -44,8 +44,8 @@
 }
 
 .modal-box {
-    width: 420px;
-    max-width: 90vw;
+    width: 480px;
+    max-width: 92vw;
     flex: none;
 }
 
@@ -69,6 +69,7 @@
 #monitor-pane {
     flex: none;
     overflow: hidden;
+    padding-bottom: 8px;
 }
 
 #params-pane {
@@ -82,10 +83,47 @@
 }
 
 .right-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
     flex: 1;
     min-width: 200px;
     overflow: hidden;
     user-select: none;
+}
+
+.right-sysmap-row {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    flex: none;
+}
+
+#cpu-panel {
+    min-width: 0;
+    flex: none;
+    width: 33%;
+}
+
+#right-splitter-h {
+    flex: none;
+}
+
+#mapping-col {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#motor-panel {
+    flex: none;
+    min-height: 0;
+}
+
+#cmd-panel {
+    flex: none;
+    min-height: 0;
 }
 
 #monitor-content {

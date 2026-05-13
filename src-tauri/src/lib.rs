@@ -37,8 +37,11 @@ pub fn run() {
                 GamepadInterface::new().expect("failed to initialize gamepad interface");
 
             let mut interval = tokio::time::interval(std::time::Duration::from_millis(20));
-            let mut mapper = Mapper::new("/dog/command".to_string());
+            let default_cfg = settings_for_thread.read().unwrap().clone();
+            let mut mapper = Mapper::new(default_cfg.publish_topic.clone());
             let mut ws_url = String::new();
+            let mut sub_topic = String::new();
+            let mut pub_topic = default_cfg.publish_topic.clone();
             let mut ws_bridge = None;
 
             loop {
@@ -46,12 +49,22 @@ pub fn run() {
                 gamepad.update();
                 let s = gamepad.state();
 
-                // 无论手柄是否连接，都检测 ws_url 变化以响应前端更新
+                // 检测前端配置变化
                 let cfg = settings_for_thread.read().unwrap().clone();
-                if cfg.ws_url != ws_url {
+                let url_changed = cfg.ws_url != ws_url;
+                let sub_changed = cfg.subscribe_topic != sub_topic;
+                let pub_changed = cfg.publish_topic != pub_topic;
+
+                if url_changed || sub_changed {
                     ws_url = cfg.ws_url.clone();
-                    ws_bridge = Some(MsgBridge::new(&ws_url));
-                    log_line!("[Gamepad] ws_url 已更新: {}", ws_url);
+                    sub_topic = cfg.subscribe_topic.clone();
+                    ws_bridge = Some(MsgBridge::new(&ws_url, &sub_topic));
+                    log_line!("[Gamepad] ws_url={}, subscribe_topic={}", ws_url, sub_topic);
+                }
+                if pub_changed {
+                    pub_topic = cfg.publish_topic.clone();
+                    mapper = Mapper::new(pub_topic.clone());
+                    log_line!("[Gamepad] publish_topic 已更新: {}", pub_topic);
                 }
 
                 // 处理接收到的消息（无论手柄是否连接）

@@ -11,16 +11,26 @@
 
 <body class="bg-dark text-white vh-100 overflow-hidden">
 
-  <!-- ====== 首次启动弹窗 ====== -->
+  <!-- ====== WebSocket 配置弹窗 ====== -->
   <div class="modal-overlay" id="ws-modal" style="display:none;">
     <div class="modal-box panel-frame">
-      <h3 class="h5 mb-3">🌐 配置 WebSocket 连接</h3>
-      <p class="small mb-2">请输入 ROS2 桥接节点的 WebSocket 地址：</p>
+      <h3 class="h5 mb-3">🌐 WebSocket 配置</h3>
+
+      <label class="small mb-1 fw-bold">WS 地址</label>
       <input id="ws-url-input" class="form-control bg-dark text-white border-secondary mb-3" type="text"
         value="ws://NanoPi-M6.local:9090" placeholder="ws://host:port">
+
+      <label class="small mb-1 fw-bold">📤 发布话题</label>
+      <input id="ws-publish-topic-input" class="form-control bg-dark text-white border-secondary mb-3" type="text"
+        value="/dog/command" placeholder="/dog/command">
+
+      <label class="small mb-1 fw-bold">📥 订阅话题</label>
+      <input id="ws-subscribe-topic-input" class="form-control bg-dark text-white border-secondary mb-3" type="text"
+        value="/dog/monitor" placeholder="/dog/monitor">
+
       <div class="d-flex justify-content-end gap-2">
         <button id="ws-modal-cancel" class="btn btn-secondary btn-sm">取消</button>
-        <button id="ws-modal-confirm" class="btn btn-primary btn-sm">确认连接</button>
+        <button id="ws-modal-confirm" class="btn btn-primary btn-sm">确认</button>
       </div>
     </div>
   </div>
@@ -33,9 +43,8 @@
       <!-- 终端输出：上 2/3（高度由 JS 控制） -->
       <div class="panel-frame" id="monitor-pane">
         <h2 class="h6 border-bottom border-white border-opacity-25 pb-2 mb-2">🖥️ 终端输出</h2>
-        <div id="terminal" class="terminal-body flex-grow-1 rounded overflow-auto">
-          <pre id="terminal-output" class="m-0"></pre>
-        </div>
+        <pre id="terminal-output" class="terminal-body flex-grow-1 rounded m-0"
+          style="white-space:pre-wrap; word-break:break-all;"></pre>
       </div>
 
       <!-- 垂直分隔条 -->
@@ -56,19 +65,31 @@
           </label>
         </div>
         <div class="small mb-2">
-          <label class="d-flex align-items-center gap-2 mb-0">
-            <span>WS 地址：</span>
+          <label class="d-flex align-items-center gap-2 mb-1">
+            <span style="width:5em;">WS 地址：</span>
             <input id="ws-url-param" class="form-control form-control-sm bg-dark text-white border-secondary"
               type="text" style="flex:1;" placeholder="ws://host:port" readonly>
-            <button id="ws-reconfig-btn" class="btn btn-outline-light btn-sm" title="重新配置连接">重设</button>
           </label>
-          <small class="text-danger" style="font-size:0.7rem;">⚠ 修改后需重启应用生效</small>
-          <hr class="my-2 border-secondary" style="border-width:4px;">
+          <label class="d-flex align-items-center gap-2 mb-1">
+            <span style="width:5em;">发布话题：</span>
+            <input id="ws-pub-topic-param" class="form-control form-control-sm bg-dark text-white border-secondary"
+              type="text" style="flex:1;" placeholder="/dog/command" readonly>
+          </label>
+          <label class="d-flex align-items-center gap-2 mb-1">
+            <span style="width:5em;">订阅话题：</span>
+            <input id="ws-sub-topic-param" class="form-control form-control-sm bg-dark text-white border-secondary"
+              type="text" style="flex:1;" placeholder="/dog/monitor" readonly>
+          </label>
+          <div class="d-flex align-items-center gap-2">
+            <button id="ws-reconfig-btn" class="btn btn-outline-light btn-sm" title="重新配置连接">⚙ 重设</button>
+            <button id="ws-reset-btn" class="btn btn-outline-danger btn-sm" title="清除本地存储，恢复初始状态">🔃 重置</button>
+          </div>
         </div>
-        <div id="params-content" class="small overflow-auto"
-          style="flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr; gap:6px; align-content:start;">
+        <div id="params-content" class="small"
+          style="flex:1; min-height:0; overflow-y:auto; display:grid; grid-template-columns:1fr 1fr; gap:6px; align-content:start;">
           <!-- 由 JS 动态生成滑块 -->
         </div>
+
       </div>
 
     </div>
@@ -76,40 +97,142 @@
     <!-- 水平分隔条 -->
     <div class="splitter splitter-v" id="splitter-h"></div>
 
-    <!-- ====== 右侧面板：系统监控 ====== -->
+    <!-- ====== 右侧面板：系统监控 + 手柄映射 + 电机 + 指令 ====== -->
     <div class="right-pane" id="right-pane">
-      <div class="panel-frame h-100 d-flex flex-column">
-        <h2 class="h6 border-bottom border-white border-opacity-25 pb-2 mb-2">📊 系统监控</h2>
-        <div id="monitor-content" class="small overflow-auto">
-          <p class="mb-1">CPU 使用率：<span id="cpu-usage" class="fw-bold">--</span>%</p>
-          <p class="mb-1">CPU 温度：<span id="cpu-temp" class="fw-bold">--</span>°C</p>
-          <p class="mb-1">控制频率：<span id="control-freq" class="fw-bold">--</span> Hz</p>
-          <hr class="my-2 border-secondary" style="border-width:2px;">
-          <p class="mb-1 fw-bold">🔧 电机状态：</p>
-          <div class="table-responsive" style="max-height:320px; overflow-y:auto;">
-            <table class="table table-dark table-sm table-borderless small mb-0" style="font-size:0.65rem;">
+
+      <!-- 子容器1：系统监控 + 手柄映射 (左右分栏) -->
+      <div class="right-sysmap-row" id="right-sysmap-row">
+        <div class="panel-frame" id="cpu-panel">
+          <h2 class="h6 border-bottom border-white border-opacity-25 pb-2 mb-2">📊 系统监控</h2>
+          <div class="small">
+            <p class="mb-1">CPU 使用率：<span id="cpu-usage" class="fw-bold">--</span>%</p>
+            <p class="mb-1">CPU 温度：<span id="cpu-temp" class="fw-bold">--</span>°C</p>
+            <p class="mb-1">控制频率：<span id="control-freq" class="fw-bold">--</span> Hz</p>
+          </div>
+        </div>
+
+        <div class="splitter splitter-v" id="right-splitter-h"></div>
+
+        <div class="panel-frame" id="mapping-col">
+          <h2 class="h6 border-bottom border-white border-opacity-25 pb-2 mb-2">🎮 手柄映射</h2>
+          <div class="small overflow-auto" style="flex:1; min-height:0; font-size:0.65rem;">
+            <table class="table table-dark table-sm table-borderless mb-0" style="font-size:0.65rem;">
               <thead class="border-bottom border-secondary">
                 <tr>
-                  <th class="text-center">名称</th>
-                  <th class="text-center">位置(rad)</th>
-                  <th class="text-center">速度(rad/s)</th>
-                  <th class="text-center">力矩(N·m)</th>
-                  <th class="text-center">温度</th>
+                  <th class="text-center">操作</th>
+                  <th class="text-center">映射</th>
                 </tr>
               </thead>
-              <tbody id="motor-status">
+              <tbody>
                 <tr>
-                  <td colspan="5" class="text-muted">等待数据...</td>
+                  <td class="text-center">左摇杆 Y</td>
+                  <td class="text-center">linear_x (前进/后退)</td>
+                </tr>
+                <tr>
+                  <td class="text-center">左摇杆 X</td>
+                  <td class="text-center">linear_y (左右平移)</td>
+                </tr>
+                <tr>
+                  <td class="text-center">右摇杆 X</td>
+                  <td class="text-center">roll (横滚)</td>
+                </tr>
+                <tr>
+                  <td class="text-center">右摇杆 Y</td>
+                  <td class="text-center">pitch (俯仰)</td>
+                </tr>
+                <tr>
+                  <td colspan="2">
+                    <hr class="my-1 border-secondary">
+                  </td>
+                </tr>
+                <tr>
+                  <td class="text-center">LB + RB (长按)</td>
+                  <td class="text-center">激活/锁定</td>
+                </tr>
+                <tr>
+                  <td class="text-center">LB</td>
+                  <td class="text-center">步高 -</td>
+                </tr>
+                <tr>
+                  <td class="text-center">RB</td>
+                  <td class="text-center">步高 +</td>
+                </tr>
+                <tr>
+                  <td colspan="2">
+                    <hr class="my-1 border-secondary">
+                  </td>
+                </tr>
+                <tr>
+                  <td class="text-center">A (南)</td>
+                  <td class="text-center">STAND</td>
+                </tr>
+                <tr>
+                  <td class="text-center">B (东)</td>
+                  <td class="text-center">WALK</td>
+                </tr>
+                <tr>
+                  <td colspan="2">
+                    <hr class="my-1 border-secondary">
+                  </td>
+                </tr>
+                <tr>
+                  <td class="text-center">十字键 ↑</td>
+                  <td class="text-center">身高 +</td>
+                </tr>
+                <tr>
+                  <td class="text-center">十字键 ↓</td>
+                  <td class="text-center">身高 -</td>
+                </tr>
+                <tr>
+                  <td class="text-center">十字键 ←</td>
+                  <td class="text-center">步周期 -</td>
+                </tr>
+                <tr>
+                  <td class="text-center">十字键 →</td>
+                  <td class="text-center">步周期 +</td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <hr class="my-2 border-secondary" style="border-width:2px;">
-          <p class="mb-1 fw-bold">📤 当前发送指令：</p>
-          <pre id="cmd-display" class="bg-dark text-info p-2 rounded"
-            style="font-size:0.65rem; white-space:pre-wrap; word-break:break-all;">等待指令...</pre>
         </div>
       </div>
+
+      <!-- 垂直分隔条 1 -->
+      <div class="splitter splitter-h" id="right-splitter-1"></div>
+
+      <!-- 子容器2：电机状态 -->
+      <div class="panel-frame" id="motor-panel">
+        <h2 class="h6 border-bottom border-white border-opacity-25 pb-2 mb-2">🔧 电机状态</h2>
+        <div class="table-responsive overflow-auto" style="flex:1; min-height:0;">
+          <table class="table table-dark table-sm table-borderless small mb-0" style="font-size:0.65rem;">
+            <thead class="border-bottom border-secondary">
+              <tr>
+                <th class="text-center">名称</th>
+                <th class="text-center">位置(rad)</th>
+                <th class="text-center">速度(rad/s)</th>
+                <th class="text-center">力矩(N·m)</th>
+                <th class="text-center">温度</th>
+              </tr>
+            </thead>
+            <tbody id="motor-status">
+              <tr>
+                <td colspan="5" class="text-muted">等待数据...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 垂直分隔条 2 -->
+      <div class="splitter splitter-h" id="right-splitter-2"></div>
+
+      <!-- 子容器3：当前发送指令 -->
+      <div class="panel-frame" id="cmd-panel">
+        <h2 class="h6 border-bottom border-white border-opacity-25 pb-2 mb-2">📤 当前发送指令</h2>
+        <pre id="cmd-display" class="bg-dark text-info p-2 rounded overflow-auto"
+          style="flex:1; min-height:0; font-size:0.65rem; white-space:pre-wrap; word-break:break-all; margin:0;">等待指令...</pre>
+      </div>
+
     </div>
 
   </div>

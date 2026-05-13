@@ -22,4 +22,15 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (reconfigBtn) {
         reconfigBtn.addEventListener("click", () => showWSModal());
     }
+
+    // 重置按钮：清除所有本地存储
+    const resetBtn = document.getElementById("ws-reset-btn");
+    if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
+            if (confirm("确认重置？将清除所有本地保存的参数（WS地址、话题、滑块值、窗口布局），恢复到初始状态。")) {
+                localStorage.clear();
+                location.reload();
+            }
+        });
+    }
 });

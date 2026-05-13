@@ -27,12 +27,12 @@ pub struct MsgBridge {
 
 impl MsgBridge {
     /// 创建 MsgBridge 并启动后台 WebSocket 连接任务
-    pub fn new(url: &str) -> Self {
-        Self::with_url(url)
+    pub fn new(url: &str, subscribe_topic: &str) -> Self {
+        Self::with_url(url, subscribe_topic)
     }
 
-    /// 指定 URL 创建
-    pub fn with_url(url: &str) -> Self {
+    /// 指定 URL 和订阅话题创建
+    pub fn with_url(url: &str, subscribe_topic: &str) -> Self {
         let send_queue = Arc::new(StdMutex::new(Vec::new()));
         let recv_queue = Arc::new(StdMutex::new(Vec::new()));
         let send_notify = Arc::new(Notify::new());
@@ -40,6 +40,7 @@ impl MsgBridge {
         let shutdown = Arc::new(AtomicBool::new(false));
 
         let ws_url = url.to_string();
+        let sub_topic = subscribe_topic.to_string();
         let snd = send_queue.clone();
         let rcv = recv_queue.clone();
         let notify = send_notify.clone();
@@ -50,7 +51,7 @@ impl MsgBridge {
         std::thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new()
                 .expect("failed to create tokio runtime for WS bridge");
-            rt.block_on(async { ws_loop(&ws_url, snd, rcv, notify, conn, sd).await });
+            rt.block_on(async { ws_loop(&ws_url, &sub_topic, snd, rcv, notify, conn, sd).await });
         });
 
         Self {
@@ -103,6 +104,7 @@ impl Drop for MsgBridge {
 /// 3. 从 WS 收消息 → 放入接收队列
 async fn ws_loop(
     url: &str,
+    subscribe_topic: &str,
     send_queue: Arc<StdMutex<Vec<String>>>,
     recv_queue: Arc<StdMutex<Vec<String>>>,
     send_notify: Arc<Notify>,
@@ -123,16 +125,18 @@ async fn ws_loop(
                 // 连接成功后立即发送队列中积压的消息
                 drain_and_send(&send_queue, &mut ws_stream).await;
 
-                // 向 rosbridge 订阅系统监控 topic，否则收不到消息
-                let sub = serde_json::json!({
-                    "op": "subscribe",
-                    "topic": "/dog/monitor",
-                    "type": "dog_msg/msg/SystemState"
-                });
-                if let Err(e) = ws_stream.send(Message::Text(sub.to_string().into())).await {
-                    log_line!("[MsgBridge] 订阅 /dog/monitor 失败: {}", e);
-                } else {
-                    log_line!("[MsgBridge] 已订阅 /dog/monitor");
+                // 向 rosbridge 订阅话题，否则收不到消息
+                if !subscribe_topic.is_empty() {
+                    let sub = serde_json::json!({
+                        "op": "subscribe",
+                        "topic": subscribe_topic,
+                        "type": "dog_msg/msg/SystemState"
+                    });
+                    if let Err(e) = ws_stream.send(Message::Text(sub.to_string().into())).await {
+                        log_line!("[MsgBridge] 订阅 {} 失败: {}", subscribe_topic, e);
+                    } else {
+                        log_line!("[MsgBridge] 已订阅 {}", subscribe_topic);
+                    }
                 }
 
                 // 主循环：同时处理发送和接收，定期检查 shutdown

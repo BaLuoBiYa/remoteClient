@@ -158,8 +158,8 @@ impl Mapper {
         }
 
         let c = cfg.curve;
-        self.cmd.linear_x = c.map(self.filt_ly, cfg.max_linear_speed, cfg.exp_sensitivity);
-        self.cmd.linear_y = -1.0 * c.map(self.filt_lx, cfg.max_linear_speed, cfg.exp_sensitivity);
+        self.cmd.linear_x = c.map(self.filt_ly, cfg.max_linear_speed_x, cfg.exp_sensitivity);
+        self.cmd.linear_y = -1.0 * c.map(self.filt_lx, cfg.max_linear_speed_y, cfg.exp_sensitivity);
         self.cmd.roll = c.map(self.filt_rx, cfg.max_roll, cfg.exp_sensitivity);
         self.cmd.pitch = c.map(self.filt_ry, cfg.max_pitch, cfg.exp_sensitivity);
     }

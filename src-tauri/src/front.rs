@@ -8,8 +8,11 @@ use std::sync::{Arc, RwLock};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
     pub ws_url: String,
+    pub publish_topic: String,
+    pub subscribe_topic: String,
     pub curve: Curve,
-    pub max_linear_speed: f32,
+    pub max_linear_speed_x: f32,
+    pub max_linear_speed_y: f32,
     pub max_roll: f32,
     pub max_pitch: f32,
     pub exp_sensitivity: f32,
@@ -29,8 +32,11 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             ws_url: "ws://localhost:9090".into(),
+            publish_topic: "/dog/command".into(),
+            subscribe_topic: "/dog/monitor".into(),
             curve: Curve::Exponential,
-            max_linear_speed: 0.1,
+            max_linear_speed_x: 0.1,
+            max_linear_speed_y: 0.1,
             max_roll: 0.1,
             max_pitch: 0.1,
             exp_sensitivity: 3.0,
@@ -74,7 +80,14 @@ pub fn update_setting(
         "ws_url" => {
             s.ws_url = value.as_str().ok_or("invalid string")?.to_string();
         }
-        "max_linear_speed" => s.max_linear_speed = value.as_f64().ok_or("invalid")? as f32,
+        "publish_topic" => {
+            s.publish_topic = value.as_str().ok_or("invalid string")?.to_string();
+        }
+        "subscribe_topic" => {
+            s.subscribe_topic = value.as_str().ok_or("invalid string")?.to_string();
+        }
+        "max_linear_speed_x" => s.max_linear_speed_x = value.as_f64().ok_or("invalid")? as f32,
+        "max_linear_speed_y" => s.max_linear_speed_y = value.as_f64().ok_or("invalid")? as f32,
         "max_roll" => s.max_roll = value.as_f64().ok_or("invalid")? as f32,
         "max_pitch" => s.max_pitch = value.as_f64().ok_or("invalid")? as f32,
         "exp_sensitivity" => s.exp_sensitivity = value.as_f64().ok_or("invalid")? as f32,

@@ -3,8 +3,11 @@ import { invoke } from "@tauri-apps/api/core";
 // ========== Settings 类型（与 Rust Settings struct 对齐） ==========
 export interface Settings {
     ws_url: string;
+    publish_topic: string;
+    subscribe_topic: string;
     curve: "Linear" | "Exponential" | "SCurve";
-    max_linear_speed: number;
+    max_linear_speed_x: number;
+    max_linear_speed_y: number;
     max_roll: number;
     max_pitch: number;
     exp_sensitivity: number;
